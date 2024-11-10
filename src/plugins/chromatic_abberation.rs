@@ -28,14 +28,31 @@ use bevy::{
     },
 };
 
+use crate::core::main_camera::MainCamera;
+
 pub struct ChromaticAbberationPlugin;
+
+fn add_components_main_camera(
+    mut commands: Commands,
+    main_camera_query: Query<Entity, With<MainCamera>>,
+) {
+    if let Ok(main_camera_entity) = main_camera_query.get_single() {
+        commands
+            .entity(main_camera_entity)
+            .insert(ChromaticAbberationSettings {
+                intensity: 0.01,
+                distance_exponent: 4.0,
+            });
+    }
+}
 
 impl Plugin for ChromaticAbberationPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ExtractComponentPlugin::<ChromaticAbberationSettings>::default(),
             UniformComponentPlugin::<ChromaticAbberationSettings>::default(),
-        ));
+        ))
+        .add_systems(Startup, add_components_main_camera);
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };

@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.14.2", features = ["dynamic_linking", "file_watcher"] }
+bevy = { version = "0.14.2", features = ["bevy_dev_tools", "dynamic_linking", "file_watcher"] }
+bevy_hanabi = "0.12.2"
 bevy_rapier3d = "0.27.0"
 rand = "0.8.5"
 

@@ -4,6 +4,13 @@ use bevy_rapier3d::prelude::{
 };
 use rand::Rng;
 
+pub struct AsteroidPlugin;
+impl Plugin for AsteroidPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, spawn_asteroids);
+    }
+}
+
 #[derive(Component)]
 pub struct Asteroid;
 

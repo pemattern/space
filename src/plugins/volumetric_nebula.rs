@@ -29,7 +29,32 @@ use bevy::{
     },
 };
 
+use crate::core::main_camera::MainCamera;
+
 pub struct VolumetricNebulaPlugin;
+
+fn add_components_main_camera(
+    mut commands: Commands,
+    main_camera_query: Query<Entity, With<MainCamera>>,
+) {
+    if let Ok(main_camera_entity) = main_camera_query.get_single() {
+        commands
+            .entity(main_camera_entity)
+            .insert(VolumetricNebulaSettings {
+                time: 0.0,
+                camera_position: Vec3::ZERO,
+                camera_right: Vec3::ZERO,
+                camera_up: Vec3::ZERO,
+                camera_forward: Vec3::ZERO,
+                light_direction: Vec3::ZERO,
+                speed: 2.0,
+                scale: 0.1,
+                iso_value: 0.86,
+                step_count: 50,
+                step_distance: 1.5,
+            });
+    }
+}
 
 fn startup_settings(
     light_query: Query<&Transform, With<DirectionalLight>>,
@@ -43,7 +68,7 @@ fn startup_settings(
 }
 
 fn update_settings(
-    mut camera_query: Query<(&Transform, &mut VolumetricNebulaSettings), With<Camera>>,
+    mut camera_query: Query<(&Transform, &mut VolumetricNebulaSettings), With<MainCamera>>,
     time: Res<Time>,
 ) {
     if let Ok(camera) = camera_query.get_single_mut() {
@@ -62,7 +87,8 @@ impl Plugin for VolumetricNebulaPlugin {
             ExtractComponentPlugin::<VolumetricNebulaSettings>::default(),
             UniformComponentPlugin::<VolumetricNebulaSettings>::default(),
         ))
-        .add_systems(Startup, startup_settings)
+        .add_systems(Startup, add_components_main_camera)
+        .add_systems(PostStartup, startup_settings)
         .add_systems(Update, update_settings);
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
