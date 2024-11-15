@@ -8,3 +8,4 @@ pub mod scene_lighting;
 pub mod space_particles;
 pub mod upgrade;
 pub mod volumetric_nebula;
+pub mod weapon;

@@ -45,7 +45,6 @@ pub fn spawn_asteroids(
             },
             Collider::capsule_y(1.0, 1.0),
             Velocity::default(),
-            GravityScale(0.0),
         ));
     }
 }

@@ -33,7 +33,7 @@ fn add_components_player(
             Collider::capsule_y(1.0, 1.0),
             Velocity::default(),
             ExternalForce::default(),
-            GravityScale(0.0),
+            TransformInterpolation::default(),
         ));
     }
 }

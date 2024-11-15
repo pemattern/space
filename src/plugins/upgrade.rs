@@ -1,14 +1,18 @@
+use std::{any::TypeId, sync::Arc};
+
 use bevy::prelude::*;
 
-use crate::core::player::Player;
+use crate::{
+    core::player::Player,
+    resources::upgrade::{Upgrade, Upgrades},
+};
 
 pub struct UpgradePlugin;
 
-pub const TEST: TestUpgrade = TestUpgrade;
-
 impl Plugin for UpgradePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, add_upgrade)
+        app.add_systems(Startup, add_components_player)
+            .add_systems(PostStartup, add_upgrade)
             .add_systems(Update, update_upgrades);
     }
 }
@@ -21,68 +25,41 @@ fn update_upgrades(container_query: Query<&UpgradeContainer, With<Player>>) {
     }
 }
 
-fn add_upgrade(mut container_query: Query<&mut UpgradeContainer, With<Player>>) {
+fn add_components_player(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
+    if let Ok(player_entity) = player_query.get_single() {
+        commands
+            .entity(player_entity)
+            .insert(UpgradeContainer::default());
+    }
+}
+
+fn add_upgrade(
+    upgrades: Res<Upgrades>,
+    mut container_query: Query<&mut UpgradeContainer, With<Player>>,
+) {
     if let Ok(mut container) = container_query.get_single_mut() {
-        // container.try_attach(UpgradeType::TestUpgrade);
+        container.attach(upgrades.test.clone());
     }
 }
 
 #[derive(Component, Default)]
 pub struct UpgradeContainer {
-    upgrades: Vec<Box<dyn Upgrade>>,
+    upgrades: Vec<Arc<dyn Upgrade>>,
 }
 
 impl UpgradeContainer {
-    pub fn get_all(&self) -> &Vec<Box<dyn Upgrade>> {
+    pub fn get_all(&self) -> &[Arc<dyn Upgrade>] {
         &self.upgrades
     }
 
-    pub fn try_attach(&mut self, upgrade_type: UpgradeType) -> bool {
-        if self
-            .upgrades
-            .iter()
-            .any(|upgrade| upgrade.get_type() == upgrade_type)
-        {
-            return false;
-        }
-        let upgrade = get_upgrade(upgrade_type);
-        upgrade.on_attach();
+    pub fn attach(&mut self, upgrade: Arc<dyn Upgrade>) {
         self.upgrades.push(upgrade);
-        return true;
-    }
-}
-
-pub trait Upgrade: Send + Sync {
-    fn get_type(&self) -> UpgradeType;
-    fn on_attach(&self) {}
-    fn on_update(&self) {}
-    fn on_remove(&self) {}
-}
-
-#[derive(Debug, PartialEq)]
-pub enum UpgradeType {
-    TestUpgrade,
-}
-
-pub struct TestUpgrade;
-impl Upgrade for TestUpgrade {
-    fn get_type(&self) -> UpgradeType {
-        UpgradeType::TestUpgrade
     }
 
-    fn on_attach(&self) {
-        info!("attached");
-    }
-    fn on_update(&self) {
-        info!("updated");
-    }
-    fn on_remove(&self) {
-        info!("removed");
-    }
-}
-
-pub fn get_upgrade(upgrade_type: UpgradeType) -> Box<dyn Upgrade> {
-    match upgrade_type {
-        UpgradeType::TestUpgrade => Box::new(TEST),
+    pub fn contains_upgrade_of_type<T: Upgrade>(&self) -> bool {
+        let type_id = TypeId::of::<T>();
+        self.upgrades
+            .iter()
+            .any(|upgrade| upgrade.type_id() == type_id)
     }
 }
