@@ -1,25 +1,33 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 
-use crate::core::player::Player;
+use crate::{
+    core::player::Player,
+    resources::weapons::{Weapon, Weapons},
+};
 
-const TEST_WEAPON: TestWeapon = TestWeapon;
-const TEST_WEAPON2: TestWeapon2 = TestWeapon2;
-
-fn add_components_player(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
+fn add_components_player(
+    mut commands: Commands,
+    weapons: Res<Weapons>,
+    player_query: Query<Entity, With<Player>>,
+) {
     if let Ok(player_entity) = player_query.get_single() {
-        commands
-            .entity(player_entity)
-            .insert(WeaponContainer::new());
+        commands.entity(player_entity).insert(WeaponSlots::new(
+            Some(weapons.test.clone()),
+            Some(weapons.test2.clone()),
+        ));
     }
 }
 
-fn update_weapon_cooldowns(time: Res<Time>, mut weapon_query: Query<&mut WeaponContainer>) {
+fn update_weapon_cooldowns(time: Res<Time>, mut weapon_query: Query<&mut WeaponSlots>) {
     let delta_seconds = time.delta_seconds();
     for mut weapon_container in weapon_query.iter_mut() {
-        let primary = &mut weapon_container.primary;
-        primary.remaining_cooldown = primary.remaining_cooldown - delta_seconds;
-        let secondary = &mut weapon_container.secondary;
-        secondary.remaining_cooldown = secondary.remaining_cooldown - delta_seconds;
+        for weapon_container_slot in weapon_container.slots.iter_mut() {
+            if let Some(weapon_slot) = &mut weapon_container_slot.1 {
+                weapon_slot.update_cooldown(delta_seconds);
+            }
+        }
     }
 }
 
@@ -27,79 +35,85 @@ pub struct WeaponPlugin;
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, add_components_player)
-            .add_systems(Update, update_weapon_cooldowns);
+            .add_systems(Update, update_weapon_cooldowns)
+            .insert_resource(Weapons::default());
     }
 }
 
 struct WeaponSlot {
-    weapon: Box<dyn Weapon>,
+    weapon: Arc<dyn Weapon>,
     remaining_cooldown: f32,
 }
 
 impl WeaponSlot {
-    fn new(weapon: Box<dyn Weapon>) -> Self {
+    fn new(weapon: Arc<dyn Weapon>) -> Self {
         Self {
             weapon,
             remaining_cooldown: 0.0,
         }
     }
+
+    pub fn fire(&mut self) {
+        info!("fired");
+        self.reset_cooldown();
+    }
+
+    pub fn update_cooldown(&mut self, delta_time: f32) {
+        self.remaining_cooldown = self.remaining_cooldown - delta_time;
+    }
+
+    fn reset_cooldown(&mut self) {
+        self.remaining_cooldown = self.weapon.cooldown();
+    }
 }
 
 #[derive(Component)]
-pub struct WeaponContainer {
-    primary: WeaponSlot,
-    secondary: WeaponSlot,
+pub struct WeaponSlots {
+    slots: [(WeaponSlotType, Option<WeaponSlot>); 2],
 }
 
-impl WeaponContainer {
-    pub fn new() -> Self {
-        Self {
-            primary: WeaponSlot::new(Box::new(TEST_WEAPON)),
-            secondary: WeaponSlot::new(Box::new(TEST_WEAPON2)),
-        }
-    }
-
-    pub fn fire(&mut self, firing_mode: FiringMode) {
-        let weapon_slot = match firing_mode {
-            FiringMode::Primary => &mut self.primary,
-            FiringMode::Secondary => &mut self.secondary,
+impl WeaponSlots {
+    fn new(primary: Option<Arc<dyn Weapon>>, secondary: Option<Arc<dyn Weapon>>) -> Self {
+        let primary_slot = match primary {
+            Some(weapon) => Some(WeaponSlot::new(weapon)),
+            None => None,
         };
-
-        if weapon_slot.remaining_cooldown <= 0.0 {
-            info!("fired: {} dmg", weapon_slot.weapon.damage());
-            weapon_slot.remaining_cooldown = weapon_slot.weapon.cooldown();
+        let secondary_slot = match secondary {
+            Some(weapon) => Some(WeaponSlot::new(weapon)),
+            None => None,
+        };
+        Self {
+            slots: [
+                (WeaponSlotType::Primary, primary_slot),
+                (WeaponSlotType::Secondary, secondary_slot),
+            ],
         }
+    }
+
+    fn replace(&mut self, weapon_slot_type: &WeaponSlotType, weapon: Arc<dyn Weapon>) {
+        let slot = self.get_slot_mut(weapon_slot_type);
+        *slot = Some(WeaponSlot::new(weapon));
+    }
+
+    pub fn fire(&mut self, weapon_slot_type: &WeaponSlotType) {
+        if let Some(weapon_slot) = self.get_slot_mut(weapon_slot_type) {
+            if weapon_slot.remaining_cooldown <= 0.0 {
+                weapon_slot.fire();
+            }
+        }
+    }
+
+    fn get_slot_mut(&mut self, weapon_slot_type: &WeaponSlotType) -> &mut Option<WeaponSlot> {
+        let index = match weapon_slot_type {
+            WeaponSlotType::Primary => 0,
+            WeaponSlotType::Secondary => 1,
+        };
+        &mut self.slots[index].1
     }
 }
 
-pub enum FiringMode {
+#[derive(PartialEq)]
+pub enum WeaponSlotType {
     Primary,
     Secondary,
-}
-
-pub struct TestWeapon;
-impl Weapon for TestWeapon {
-    fn cooldown(&self) -> f32 {
-        1.0
-    }
-
-    fn damage(&self) -> f32 {
-        2.0
-    }
-}
-
-pub struct TestWeapon2;
-impl Weapon for TestWeapon2 {
-    fn cooldown(&self) -> f32 {
-        2.0
-    }
-
-    fn damage(&self) -> f32 {
-        4.0
-    }
-}
-
-trait Weapon: Send + Sync {
-    fn cooldown(&self) -> f32;
-    fn damage(&self) -> f32;
 }

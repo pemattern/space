@@ -14,7 +14,7 @@ use plugins::{
     procedural_skybox::ProceduralSkyboxPlugin, upgrade::UpgradePlugin,
     volumetric_nebula::VolumetricNebulaPlugin, weapon::WeaponPlugin,
 };
-use resources::upgrade::Upgrades;
+use resources::upgrades::Upgrades;
 
 fn main() {
     App::new()

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     core::player::Player,
-    resources::upgrade::{Upgrade, Upgrades},
+    resources::upgrades::{Upgrade, Upgrades},
 };
 
 pub struct UpgradePlugin;
@@ -13,7 +13,8 @@ impl Plugin for UpgradePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, add_components_player)
             .add_systems(PostStartup, add_upgrade)
-            .add_systems(Update, update_upgrades);
+            .add_systems(Update, update_upgrades)
+            .insert_resource(Upgrades::default());
     }
 }
 

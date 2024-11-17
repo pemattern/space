@@ -3,7 +3,7 @@ use bevy_rapier3d::prelude::*;
 
 use crate::core::player::Player;
 
-use super::weapon::{FiringMode, WeaponContainer};
+use super::weapon::{WeaponSlotType, WeaponSlots};
 
 pub struct PlayerControllerPlugin;
 
@@ -11,7 +11,8 @@ impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, add_player_controller)
             .add_systems(FixedUpdate, player_movement)
-            .add_systems(Update, handle_player_input);
+            .add_systems(Update, handle_player_input)
+            .add_systems(Update, player_weapon_fire);
     }
 }
 
@@ -108,14 +109,14 @@ fn player_movement(
 
 fn player_weapon_fire(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
-    mut weapon_container_query: Query<&mut WeaponContainer, With<Player>>,
+    mut weapon_slots_query: Query<&mut WeaponSlots, With<Player>>,
 ) {
-    if let Ok(mut weapon_container) = weapon_container_query.get_single_mut() {
+    if let Ok(mut weapon_slots) = weapon_slots_query.get_single_mut() {
         if mouse_button_input.pressed(MouseButton::Left) {
-            weapon_container.fire(FiringMode::Primary);
+            weapon_slots.fire(&WeaponSlotType::Primary);
         }
         if mouse_button_input.pressed(MouseButton::Right) {
-            weapon_container.fire(FiringMode::Secondary);
+            weapon_slots.fire(&WeaponSlotType::Secondary);
         }
     }
 }
