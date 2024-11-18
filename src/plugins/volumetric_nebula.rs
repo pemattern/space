@@ -50,8 +50,8 @@ fn add_components_main_camera(
                 speed: 2.0,
                 scale: 0.1,
                 iso_value: 0.86,
-                step_count: 50,
-                step_distance: 1.5,
+                step_count: 10,
+                step_distance: 3.0,
             });
     }
 }

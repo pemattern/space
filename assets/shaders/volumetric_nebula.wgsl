@@ -33,8 +33,8 @@ fn noise(p: vec3<f32>, uv: vec2<f32>) -> vec4<f32> {
     return noise_value;
 }
 
-fn intensity_at_depth(x: f32) -> f32 {
-    return -pow(2.0 * x - 1.0, 2.0) + 1.0;
+fn color_at_depth(x: f32) -> vec4<f32> {
+    return mix(vec4<f32>(1.0, 1.0, 0.0, 1.0), vec4<f32>(0.0, 0.0, 1.0, 1.0), x);
 }
 
 fn ray_march(origin: vec3<f32>, ray_direction: vec3<f32>, ray_depth: f32, uv: vec2<f32>) -> vec4<f32> {
@@ -45,7 +45,7 @@ fn ray_march(origin: vec3<f32>, ray_direction: vec3<f32>, ray_depth: f32, uv: ve
     for (var i: i32 = 0; i < settings.step_count; i = i + 1) {
         var density = noise(p, uv);
         if length(density) - settings.iso_value > 0.0 {
-            result = result + density * intensity_at_depth(depth / full_depth) * (1.0 / f32(settings.step_count));
+            result = result + density * color_at_depth(depth / full_depth) * (1.0 / f32(settings.step_count));
         }
         depth = depth + settings.step_distance;
         if depth <= ray_depth * full_depth {
@@ -64,7 +64,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         settings.camera_forward + settings.camera_right * ndc.x + settings.camera_up * -ndc.y
     );
     let ray_depth = textureLoad(depth_texture, vec2<i32>(in.position.xy), 0);
-    let ray_color = ray_march(ray_origin, ray_direction, ray_depth, in.uv) * 0.15;
+    let ray_color = ray_march(ray_origin, ray_direction, ray_depth, in.uv) * 0.05;
     let scene_color = textureSample(main_texture, main_texture_sampler, in.uv);
     return ray_color + scene_color;
 }

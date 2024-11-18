@@ -2,11 +2,7 @@ mod core;
 mod plugins;
 mod resources;
 
-use bevy::{
-    dev_tools::fps_overlay::FpsOverlayPlugin,
-    prelude::*,
-    window::{CursorGrabMode, PrimaryWindow, WindowResolution},
-};
+use bevy::{dev_tools::fps_overlay::FpsOverlayPlugin, prelude::*, window::WindowResolution};
 use bevy_rapier3d::plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin, TimestepMode};
 use plugins::{
     asteroid::AsteroidPlugin, chromatic_abberation::ChromaticAbberationPlugin,
@@ -20,7 +16,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: WindowResolution::new(640.0, 480.0),
+                resolution: WindowResolution::new(1280.0, 720.0),
                 ..default()
             }),
             ..default()
@@ -49,16 +45,5 @@ fn main() {
             scaled_shape_subdivision: 4,
             force_update_from_transform_changes: false,
         })
-        .add_systems(Startup, cursor_hack)
         .run();
-}
-
-fn cursor_hack(mut windows: Query<&mut Window, With<PrimaryWindow>>) {
-    for mut window in windows.iter_mut() {
-        let half_width = window.resolution.width() / 2.0;
-        let half_height = window.resolution.height() / 2.0;
-        window.set_cursor_position(Some(Vec2::new(half_width, half_height)));
-        window.cursor.grab_mode = CursorGrabMode::Locked;
-        window.cursor.visible = false;
-    }
 }

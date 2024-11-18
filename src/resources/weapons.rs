@@ -12,7 +12,7 @@ pub struct Weapons {
 pub struct TestWeapon;
 impl Weapon for TestWeapon {
     fn cooldown(&self) -> f32 {
-        1.0
+        0.25
     }
 
     fn damage(&self) -> f32 {

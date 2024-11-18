@@ -1,6 +1,8 @@
+use crate::core::projectile::Projectile;
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 use crate::{
     core::player::Player,
@@ -20,12 +22,57 @@ fn add_components_player(
     }
 }
 
-fn update_weapon_cooldowns(time: Res<Time>, mut weapon_query: Query<&mut WeaponSlots>) {
-    let delta_seconds = time.delta_seconds();
-    for mut weapon_container in weapon_query.iter_mut() {
-        for weapon_container_slot in weapon_container.slots.iter_mut() {
-            if let Some(weapon_slot) = &mut weapon_container_slot.1 {
-                weapon_slot.update_cooldown(delta_seconds);
+fn update_weapon_slots(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut query: Query<(&mut WeaponSlots, &Transform)>,
+) {
+    for (mut weapon_slots, transform) in query.iter_mut() {
+        for weapon_slot in weapon_slots.slots.iter_mut() {
+            if let Some(weapon_slot) = &mut weapon_slot.1 {
+                match weapon_slot.state {
+                    WeaponSlotState::Cooldown(ref mut cooldown) => {
+                        if *cooldown > 0.0 {
+                            *cooldown -= time.delta_seconds();
+                        }
+                        if *cooldown <= 0.0 {
+                            weapon_slot.state = WeaponSlotState::Ready;
+                        }
+                    }
+                    WeaponSlotState::Fired => {
+                        commands.spawn((
+                            Projectile { lifetime: 0.5 },
+                            RigidBody::Dynamic,
+                            Collider::ball(0.1),
+                            Velocity {
+                                linvel: transform.forward() * 200.0,
+                                angvel: Vec3::ZERO,
+                            },
+                            PbrBundle {
+                                mesh: meshes.add(Capsule3d {
+                                    radius: 0.1,
+                                    half_length: 3.0,
+                                }),
+                                material: materials.add(StandardMaterial {
+                                    base_color: Color::srgb(0.0, 1.0, 0.0),
+                                    unlit: true,
+                                    ..default()
+                                }),
+                                transform: Transform {
+                                    translation: transform.translation + transform.forward() * 2.0,
+                                    rotation: transform.rotation
+                                        * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                        ));
+                        weapon_slot.state = WeaponSlotState::Cooldown(weapon_slot.weapon.cooldown())
+                    }
+                    _ => {}
+                }
             }
         }
     }
@@ -35,36 +82,29 @@ pub struct WeaponPlugin;
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, add_components_player)
-            .add_systems(Update, update_weapon_cooldowns)
+            .add_systems(Update, update_weapon_slots)
             .insert_resource(Weapons::default());
     }
 }
 
 struct WeaponSlot {
     weapon: Arc<dyn Weapon>,
-    remaining_cooldown: f32,
+    state: WeaponSlotState,
 }
 
 impl WeaponSlot {
     fn new(weapon: Arc<dyn Weapon>) -> Self {
         Self {
             weapon,
-            remaining_cooldown: 0.0,
+            state: WeaponSlotState::Ready,
         }
     }
+}
 
-    pub fn fire(&mut self) {
-        info!("fired");
-        self.reset_cooldown();
-    }
-
-    pub fn update_cooldown(&mut self, delta_time: f32) {
-        self.remaining_cooldown = self.remaining_cooldown - delta_time;
-    }
-
-    fn reset_cooldown(&mut self) {
-        self.remaining_cooldown = self.weapon.cooldown();
-    }
+pub enum WeaponSlotState {
+    Ready,
+    Cooldown(f32),
+    Fired,
 }
 
 #[derive(Component)]
@@ -97,8 +137,11 @@ impl WeaponSlots {
 
     pub fn fire(&mut self, weapon_slot_type: &WeaponSlotType) {
         if let Some(weapon_slot) = self.get_slot_mut(weapon_slot_type) {
-            if weapon_slot.remaining_cooldown <= 0.0 {
-                weapon_slot.fire();
+            match weapon_slot.state {
+                WeaponSlotState::Ready => {
+                    weapon_slot.state = WeaponSlotState::Fired;
+                }
+                _ => {}
             }
         }
     }
