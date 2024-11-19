@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::{
-    Collider, Damping, ExternalImpulse, GravityScale, RigidBody, Velocity,
-};
+use bevy_rapier3d::prelude::{Collider, Damping, ExternalImpulse, RigidBody, Velocity};
 use rand::Rng;
 
 pub struct AsteroidPlugin;
@@ -16,27 +14,32 @@ pub struct Asteroid;
 
 pub fn spawn_asteroids(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
 ) {
+    let asteroid_mesh_handle = asset_server.load(
+        GltfAssetLabel::Primitive {
+            mesh: 0,
+            primitive: 0,
+        }
+        .from_asset("meshes/asteroid_1.glb"),
+    );
+    let asteroid_material_handle = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.3, 0.3, 0.3),
+        ..default()
+    });
     for _ in 0..1000 {
         commands.spawn((
             Asteroid,
             PbrBundle {
-                mesh: meshes.add(Cuboid::default()),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::srgb(0.2, 0.2, 0.2),
-                    ..default()
-                }),
+                mesh: asteroid_mesh_handle.clone(),
+                material: asteroid_material_handle.clone(),
                 transform: Transform {
                     translation: random_vec3_in_sphere(),
+                    scale: random_vec3(0.75, 1.25),
                     ..default()
                 },
                 ..default()
-            },
-            ExternalImpulse {
-                impulse: random_vec3(-5.0, 5.0),
-                torque_impulse: random_vec3(-5.0, 5.0),
             },
             RigidBody::Dynamic,
             Damping {
@@ -44,7 +47,10 @@ pub fn spawn_asteroids(
                 angular_damping: 0.0,
             },
             Collider::capsule_y(1.0, 1.0),
-            Velocity::default(),
+            Velocity {
+                linvel: random_vec3(-0.5, 0.5),
+                angvel: random_vec3(-0.5, 0.5),
+            },
         ));
     }
 }

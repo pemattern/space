@@ -2,7 +2,12 @@ mod core;
 mod plugins;
 mod resources;
 
-use bevy::{dev_tools::fps_overlay::FpsOverlayPlugin, prelude::*, window::WindowResolution};
+use bevy::{
+    dev_tools::fps_overlay::FpsOverlayPlugin,
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    prelude::*,
+    window::WindowResolution,
+};
 use bevy_rapier3d::plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin, TimestepMode};
 use plugins::{
     asteroid::AsteroidPlugin, chromatic_abberation::ChromaticAbberationPlugin,
@@ -16,7 +21,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: WindowResolution::new(1280.0, 720.0),
+                resolution: WindowResolution::new(1920.0, 1080.0),
+                // mode: bevy::window::WindowMode::BorderlessFullscreen,
                 ..default()
             }),
             ..default()
@@ -26,7 +32,7 @@ fn main() {
         .add_plugins(FpsOverlayPlugin::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(ProceduralSkyboxPlugin)
-        .add_plugins(VolumetricNebulaPlugin)
+        // .add_plugins(VolumetricNebulaPlugin)
         .add_plugins(ChromaticAbberationPlugin)
         .add_plugins(PlayerControllerPlugin)
         .add_plugins(AsteroidPlugin)
