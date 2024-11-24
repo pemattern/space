@@ -17,22 +17,29 @@ pub fn spawn_asteroids(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let asteroid_mesh_handle = asset_server.load(
-        GltfAssetLabel::Primitive {
-            mesh: 0,
-            primitive: 0,
-        }
-        .from_asset("meshes/asteroid_1.glb"),
-    );
+    let mut asteroid_mesh_handles: Vec<Handle<Mesh>> = Vec::new();
+    let mesh_variants = 3;
+    let asteroid_count = 1000;
+    for variant in 0..mesh_variants {
+        asteroid_mesh_handles.push(
+            asset_server.load(
+                GltfAssetLabel::Primitive {
+                    mesh: variant,
+                    primitive: 0,
+                }
+                .from_asset("meshes/asteroid.glb"),
+            ),
+        );
+    }
     let asteroid_material_handle = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.3, 0.3, 0.3),
+        base_color: Color::srgb(0.25, 0.2, 0.15),
         ..default()
     });
-    for _ in 0..1000 {
+    for _ in 0..asteroid_count {
         commands.spawn((
             Asteroid,
             PbrBundle {
-                mesh: asteroid_mesh_handle.clone(),
+                mesh: asteroid_mesh_handles[rand::thread_rng().gen_range(0..mesh_variants)].clone(),
                 material: asteroid_material_handle.clone(),
                 transform: Transform {
                     translation: random_vec3_in_sphere(),
@@ -48,8 +55,8 @@ pub fn spawn_asteroids(
             },
             Collider::capsule_y(1.0, 1.0),
             Velocity {
-                linvel: random_vec3(-0.5, 0.5),
-                angvel: random_vec3(-0.5, 0.5),
+                linvel: random_vec3(-0.1, 0.1),
+                angvel: random_vec3(-0.1, 0.1),
             },
         ));
     }

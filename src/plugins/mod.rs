@@ -1,12 +1,12 @@
 pub mod asteroid;
 pub mod chromatic_abberation;
 pub mod main_camera;
+pub mod outline;
 pub mod player;
 pub mod player_controller;
 pub mod procedural_skybox;
 pub mod projectile;
 pub mod scene_lighting;
-pub mod space_particles;
 pub mod upgrade;
 pub mod volumetric_nebula;
 pub mod weapon;

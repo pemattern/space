@@ -2,6 +2,8 @@ mod core;
 mod plugins;
 mod resources;
 
+use core::projectile::Projectile;
+
 use bevy::{
     dev_tools::fps_overlay::FpsOverlayPlugin,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
@@ -11,8 +13,9 @@ use bevy::{
 use bevy_rapier3d::plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin, TimestepMode};
 use plugins::{
     asteroid::AsteroidPlugin, chromatic_abberation::ChromaticAbberationPlugin,
-    main_camera::MainCameraPlugin, player::PlayerPlugin, player_controller::PlayerControllerPlugin,
-    procedural_skybox::ProceduralSkyboxPlugin, upgrade::UpgradePlugin,
+    main_camera::MainCameraPlugin, outline::OutlinePlugin, player::PlayerPlugin,
+    player_controller::PlayerControllerPlugin, procedural_skybox::ProceduralSkyboxPlugin,
+    projectile::ProjectilePlugin, scene_lighting::SceneLightingPlugin, upgrade::UpgradePlugin,
     volumetric_nebula::VolumetricNebulaPlugin, weapon::WeaponPlugin,
 };
 use resources::upgrades::Upgrades;
@@ -32,12 +35,15 @@ fn main() {
         .add_plugins(FpsOverlayPlugin::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(ProceduralSkyboxPlugin)
-        // .add_plugins(VolumetricNebulaPlugin)
+        .add_plugins(VolumetricNebulaPlugin)
+        // .add_plugins(OutlinePlugin)
         .add_plugins(ChromaticAbberationPlugin)
         .add_plugins(PlayerControllerPlugin)
         .add_plugins(AsteroidPlugin)
         .add_plugins(UpgradePlugin)
         .add_plugins(WeaponPlugin)
+        .add_plugins(ProjectilePlugin)
+        .add_plugins(SceneLightingPlugin)
         .insert_resource(Upgrades::default())
         .insert_resource(RapierConfiguration {
             gravity: Vec3::ZERO,

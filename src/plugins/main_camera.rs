@@ -7,7 +7,7 @@ use crate::core::{main_camera::MainCamera, player::Player};
 
 pub struct MainCameraPlugin;
 
-const TARGET_OFFSET: Vec3 = Vec3::new(0.0, 3.0, 14.0);
+const TARGET_OFFSET: Vec3 = Vec3::new(0.0, 4.2, 14.0);
 
 impl Plugin for MainCameraPlugin {
     fn build(&self, app: &mut App) {
@@ -49,10 +49,10 @@ fn camera_follow(
             let target_position = player_transform.translation + target_offset_relative_to_player;
             camera_transform.translation = camera_transform
                 .translation
-                .lerp(target_position, 15.0 * time.delta_seconds());
+                .lerp(target_position, 10.0 * time.delta_seconds());
             camera_transform.rotation = camera_transform
                 .rotation
-                .slerp(player_transform.rotation, 15.0 * time.delta_seconds());
+                .slerp(player_transform.rotation, 10.0 * time.delta_seconds());
         }
     }
 }

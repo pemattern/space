@@ -12,13 +12,19 @@ fn spawn_player(mut commands: Commands) {
 fn add_components_player(
     mut commands: Commands,
     player_query: Query<Entity, With<Player>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if let Ok(player_entity) = player_query.get_single() {
         commands.entity(player_entity).insert((
             PbrBundle {
-                mesh: meshes.add(ConicalFrustum::default()),
+                mesh: asset_server.load(
+                    GltfAssetLabel::Primitive {
+                        mesh: 0,
+                        primitive: 0,
+                    }
+                    .from_asset("meshes/spaceship.glb"),
+                ),
                 material: materials.add(StandardMaterial {
                     base_color: Color::srgb(0.7, 0.15, 0.15),
                     ..default()

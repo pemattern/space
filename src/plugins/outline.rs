@@ -15,7 +15,10 @@ use bevy::{
             NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
-            binding_types::{sampler, texture_2d, texture_depth_2d_multisampled, uniform_buffer},
+            binding_types::{
+                sampler, texture_2d, texture_2d_multisampled, texture_depth_2d_multisampled,
+                uniform_buffer,
+            },
             BindGroupEntries, BindGroupLayout, BindGroupLayoutEntries, CachedRenderPipelineId,
             ColorTargetState, ColorWrites, FragmentState, MultisampleState, Operations,
             PipelineCache, PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor,
@@ -31,7 +34,7 @@ use bevy::{
 
 use crate::core::main_camera::MainCamera;
 
-pub struct VolumetricNebulaPlugin;
+pub struct OutlinePlugin;
 
 fn add_components_main_camera(
     mut commands: Commands,
@@ -40,69 +43,27 @@ fn add_components_main_camera(
     if let Ok(main_camera_entity) = main_camera_query.get_single() {
         commands
             .entity(main_camera_entity)
-            .insert(VolumetricNebulaSettings {
-                time: 0.0,
-                camera_position: Vec3::ZERO,
-                camera_right: Vec3::ZERO,
-                camera_up: Vec3::ZERO,
-                camera_forward: Vec3::ZERO,
-                light_direction: Vec3::ZERO,
-                speed: 2.0,
-                scale: 0.1,
-                iso_value: 0.86,
-                step_count: 30,
-                step_distance: 3.0,
-            });
+            .insert(OutlineSettings { cutoff: 0.5 });
     }
 }
 
-fn startup_settings(
-    light_query: Query<&Transform, With<DirectionalLight>>,
-    mut nebula_query: Query<&mut VolumetricNebulaSettings, With<Camera>>,
-) {
-    if let Ok(light) = light_query.get_single() {
-        if let Ok(mut nebula) = nebula_query.get_single_mut() {
-            nebula.light_direction = light.forward().as_vec3();
-        }
-    }
-}
-
-fn update_settings(
-    mut camera_query: Query<(&Transform, &mut VolumetricNebulaSettings), With<MainCamera>>,
-    time: Res<Time>,
-) {
-    if let Ok(camera) = camera_query.get_single_mut() {
-        let mut settings = camera.1;
-        settings.camera_position = camera.0.translation;
-        settings.camera_right = camera.0.right().as_vec3();
-        settings.camera_up = camera.0.up().as_vec3();
-        settings.camera_forward = camera.0.forward().as_vec3();
-        settings.time = time.elapsed_seconds_wrapped();
-    }
-}
-
-impl Plugin for VolumetricNebulaPlugin {
+impl Plugin for OutlinePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            ExtractComponentPlugin::<VolumetricNebulaSettings>::default(),
-            UniformComponentPlugin::<VolumetricNebulaSettings>::default(),
+            ExtractComponentPlugin::<OutlineSettings>::default(),
+            UniformComponentPlugin::<OutlineSettings>::default(),
         ))
-        .add_systems(Startup, add_components_main_camera)
-        .add_systems(PostStartup, startup_settings)
-        .add_systems(Update, update_settings);
+        .add_systems(Startup, add_components_main_camera);
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
         };
         render_app
-            .add_render_graph_node::<ViewNodeRunner<VolumetricNebulaNode>>(
-                Core3d,
-                VolumetricNebulaLabel,
-            )
+            .add_render_graph_node::<ViewNodeRunner<OutlineNode>>(Core3d, OutlineLabel)
             .add_render_graph_edges(
                 Core3d,
                 (
                     Node3d::Tonemapping,
-                    VolumetricNebulaLabel,
+                    OutlineLabel,
                     Node3d::EndMainPassPostProcessing,
                 ),
             );
@@ -113,36 +74,26 @@ impl Plugin for VolumetricNebulaPlugin {
             return;
         };
 
-        render_app.init_resource::<VolumetricNebulaPipeline>();
+        render_app.init_resource::<OutlinePipeline>();
     }
 }
 
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
-pub struct VolumetricNebulaSettings {
-    pub time: f32,
-    pub camera_position: Vec3,
-    pub camera_right: Vec3,
-    pub camera_up: Vec3,
-    pub camera_forward: Vec3,
-    pub light_direction: Vec3,
-    pub speed: f32,
-    pub scale: f32,
-    pub iso_value: f32,
-    pub step_count: i32,
-    pub step_distance: f32,
+pub struct OutlineSettings {
+    pub cutoff: f32,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
-struct VolumetricNebulaLabel;
+struct OutlineLabel;
 
 #[derive(Default)]
-struct VolumetricNebulaNode;
+struct OutlineNode;
 
-impl ViewNode for VolumetricNebulaNode {
+impl ViewNode for OutlineNode {
     type ViewQuery = (
         &'static ViewTarget,
-        &'static VolumetricNebulaSettings,
-        &'static DynamicUniformIndex<VolumetricNebulaSettings>,
+        &'static OutlineSettings,
+        &'static DynamicUniformIndex<OutlineSettings>,
         &'static ViewPrepassTextures,
     );
 
@@ -155,7 +106,7 @@ impl ViewNode for VolumetricNebulaNode {
         >,
         world: &World,
     ) -> Result<(), NodeRunError> {
-        let post_process_pipeline = world.resource::<VolumetricNebulaPipeline>();
+        let post_process_pipeline = world.resource::<OutlinePipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
 
         let Some(pipeline) = pipeline_cache.get_render_pipeline(post_process_pipeline.pipeline_id)
@@ -163,18 +114,24 @@ impl ViewNode for VolumetricNebulaNode {
             return Ok(());
         };
 
-        let settings_uniforms = world.resource::<ComponentUniforms<VolumetricNebulaSettings>>();
+        let settings_uniforms = world.resource::<ComponentUniforms<OutlineSettings>>();
         let Some(settings_binding) = settings_uniforms.uniforms().binding() else {
             return Ok(());
         };
 
         let post_process = view_target.post_process_write();
+        let depth_view = view_prepass_textures.depth_view().expect("no depth view");
+        let normals_view = view_prepass_textures
+            .normal_view()
+            .expect("no normals view");
         let bind_group = render_context.render_device().create_bind_group(
             "post_process_bind_group",
             &post_process_pipeline.layout,
             &BindGroupEntries::sequential((
                 post_process.source,
                 &post_process_pipeline.color_sampler,
+                depth_view,
+                normals_view,
                 settings_binding.clone(),
             )),
         );
@@ -199,7 +156,7 @@ impl ViewNode for VolumetricNebulaNode {
     }
 }
 
-impl FromWorld for VolumetricNebulaPipeline {
+impl FromWorld for OutlinePipeline {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
         let layout = render_device.create_bind_group_layout(
@@ -209,18 +166,20 @@ impl FromWorld for VolumetricNebulaPipeline {
                 (
                     texture_2d(TextureSampleType::Float { filterable: true }),
                     sampler(SamplerBindingType::Filtering),
-                    uniform_buffer::<VolumetricNebulaSettings>(true),
+                    texture_depth_2d_multisampled(),
+                    texture_2d_multisampled(TextureSampleType::Float { filterable: false }),
+                    uniform_buffer::<OutlineSettings>(true),
                 ),
             ),
         );
 
         let color_sampler = render_device.create_sampler(&SamplerDescriptor::default());
-        let shader = world.load_asset("shaders/volumetric_nebula.wgsl");
+        let shader = world.load_asset("shaders/outline.wgsl");
         let pipeline_id =
             world
                 .resource_mut::<PipelineCache>()
                 .queue_render_pipeline(RenderPipelineDescriptor {
-                    label: Some("volumetric_nebula_pipeline".into()),
+                    label: Some("outline_pipline".into()),
                     layout: vec![layout.clone()],
                     vertex: fullscreen_shader_vertex_state(),
                     fragment: Some(FragmentState {
@@ -248,7 +207,7 @@ impl FromWorld for VolumetricNebulaPipeline {
 }
 
 #[derive(Resource)]
-struct VolumetricNebulaPipeline {
+struct OutlinePipeline {
     layout: BindGroupLayout,
     color_sampler: Sampler,
     pipeline_id: CachedRenderPipelineId,

@@ -43,7 +43,7 @@ fn update_weapon_slots(
                     }
                     WeaponSlotState::Fired => {
                         commands.spawn((
-                            Projectile { lifetime: 0.5 },
+                            Projectile { lifetime: 1.0 },
                             RigidBody::Dynamic,
                             Collider::ball(0.1),
                             Velocity {
