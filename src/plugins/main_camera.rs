@@ -27,10 +27,8 @@ fn add_components_main_camera(
 ) {
     if let Ok(main_camera_entity) = main_camera_query.get_single() {
         commands.entity(main_camera_entity).insert((
-            Camera3dBundle {
-                transform: Transform::from_translation(TARGET_OFFSET),
-                ..default()
-            },
+            Camera3d::default(),
+            Transform::from_translation(TARGET_OFFSET),
             DepthPrepass,
             NormalPrepass,
         ));
@@ -49,10 +47,10 @@ fn camera_follow(
             let target_position = player_transform.translation + target_offset_relative_to_player;
             camera_transform.translation = camera_transform
                 .translation
-                .lerp(target_position, 10.0 * time.delta_seconds());
+                .lerp(target_position, 10.0 * time.delta_secs());
             camera_transform.rotation = camera_transform
                 .rotation
-                .slerp(player_transform.rotation, 10.0 * time.delta_seconds());
+                .slerp(player_transform.rotation, 10.0 * time.delta_secs());
         }
     }
 }

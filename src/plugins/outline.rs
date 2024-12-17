@@ -26,7 +26,6 @@ use bevy::{
             ShaderType, TextureFormat, TextureSampleType,
         },
         renderer::{RenderContext, RenderDevice},
-        texture::BevyDefault,
         view::ViewTarget,
         RenderApp,
     },
@@ -196,6 +195,7 @@ impl FromWorld for OutlinePipeline {
                     depth_stencil: None,
                     multisample: MultisampleState::default(),
                     push_constant_ranges: vec![],
+                    zero_initialize_workgroup_memory: true,
                 });
 
         Self {

@@ -1,3 +1,4 @@
+use bevy::render::render_resource::binding_types::texture_depth_2d_multisampled;
 use bevy::{
     core_pipeline::{
         core_3d::graph::{Core3d, Node3d},
@@ -15,7 +16,7 @@ use bevy::{
             NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
-            binding_types::{sampler, texture_2d, texture_depth_2d_multisampled, uniform_buffer},
+            binding_types::{sampler, texture_2d, uniform_buffer},
             BindGroupEntries, BindGroupLayout, BindGroupLayoutEntries, CachedRenderPipelineId,
             ColorTargetState, ColorWrites, FragmentState, MultisampleState, Operations,
             PipelineCache, PrimitiveState, RenderPassColorAttachment, RenderPassDescriptor,
@@ -23,7 +24,6 @@ use bevy::{
             ShaderType, TextureFormat, TextureSampleType,
         },
         renderer::{RenderContext, RenderDevice},
-        texture::BevyDefault,
         view::ViewTarget,
         RenderApp,
     },
@@ -77,7 +77,7 @@ fn update_settings(
         settings.camera_right = camera.0.right().as_vec3();
         settings.camera_up = camera.0.up().as_vec3();
         settings.camera_forward = camera.0.forward().as_vec3();
-        settings.time = time.elapsed_seconds_wrapped();
+        settings.time = time.elapsed_secs_wrapped();
     }
 }
 
@@ -237,6 +237,7 @@ impl FromWorld for VolumetricNebulaPipeline {
                     depth_stencil: None,
                     multisample: MultisampleState::default(),
                     push_constant_ranges: vec![],
+                    zero_initialize_workgroup_memory: true,
                 });
 
         Self {

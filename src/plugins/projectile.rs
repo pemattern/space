@@ -15,7 +15,7 @@ fn update_projectiles(
     mut projectile_query: Query<(Entity, &mut Projectile)>,
 ) {
     for (projectile_entity, mut projectile) in projectile_query.iter_mut() {
-        projectile.lifetime -= time.delta_seconds();
+        projectile.lifetime -= time.delta_secs();
         if projectile.lifetime <= 0.0 {
             commands.entity(projectile_entity).despawn();
         }

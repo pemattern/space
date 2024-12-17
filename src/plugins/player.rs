@@ -17,20 +17,19 @@ fn add_components_player(
 ) {
     if let Ok(player_entity) = player_query.get_single() {
         commands.entity(player_entity).insert((
-            PbrBundle {
-                mesh: asset_server.load(
+            Mesh3d(
+                asset_server.load(
                     GltfAssetLabel::Primitive {
                         mesh: 0,
                         primitive: 0,
                     }
                     .from_asset("meshes/spaceship.glb"),
                 ),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::srgb(0.7, 0.15, 0.15),
-                    ..default()
-                }),
+            ),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.7, 0.15, 0.15),
                 ..default()
-            },
+            })),
             RigidBody::Dynamic,
             Damping {
                 linear_damping: 0.9,

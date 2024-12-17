@@ -45,17 +45,17 @@ fn main() {
         .add_plugins(ProjectilePlugin)
         .add_plugins(SceneLightingPlugin)
         .insert_resource(Upgrades::default())
-        .insert_resource(RapierConfiguration {
-            gravity: Vec3::ZERO,
-            physics_pipeline_active: true,
-            query_pipeline_active: true,
-            timestep_mode: TimestepMode::Interpolated {
-                dt: 1.0 / 60.0,
-                time_scale: 1.0,
-                substeps: 1,
-            },
-            scaled_shape_subdivision: 4,
-            force_update_from_transform_changes: false,
+        .insert_resource(TimestepMode::Interpolated {
+            dt: 1.0 / 60.0,
+            time_scale: 1.0,
+            substeps: 1,
         })
+        .add_systems(Startup, physics_config)
         .run();
+}
+
+fn physics_config(mut config_query: Query<&mut RapierConfiguration>) {
+    if let Ok(mut config) = config_query.get_single_mut() {
+        config.gravity = Vec3::ZERO;
+    }
 }

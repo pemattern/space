@@ -35,7 +35,7 @@ fn update_weapon_slots(
                 match weapon_slot.state {
                     WeaponSlotState::Cooldown(ref mut cooldown) => {
                         if *cooldown > 0.0 {
-                            *cooldown -= time.delta_seconds();
+                            *cooldown -= time.delta_secs();
                         }
                         if *cooldown <= 0.0 {
                             weapon_slot.state = WeaponSlotState::Ready;
@@ -50,22 +50,19 @@ fn update_weapon_slots(
                                 linvel: transform.forward() * 200.0,
                                 angvel: Vec3::ZERO,
                             },
-                            PbrBundle {
-                                mesh: meshes.add(Capsule3d {
-                                    radius: 0.1,
-                                    half_length: 3.0,
-                                }),
-                                material: materials.add(StandardMaterial {
-                                    base_color: Color::srgb(0.0, 1.0, 0.0),
-                                    unlit: true,
-                                    ..default()
-                                }),
-                                transform: Transform {
-                                    translation: transform.translation + transform.forward() * 2.0,
-                                    rotation: transform.rotation
-                                        * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2),
-                                    ..default()
-                                },
+                            Mesh3d(meshes.add(Capsule3d {
+                                radius: 0.1,
+                                half_length: 3.0,
+                            })),
+                            MeshMaterial3d(materials.add(StandardMaterial {
+                                base_color: Color::srgb(0.0, 1.0, 0.0),
+                                unlit: true,
+                                ..default()
+                            })),
+                            Transform {
+                                translation: transform.translation + transform.forward() * 2.0,
+                                rotation: transform.rotation
+                                    * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2),
                                 ..default()
                             },
                         ));

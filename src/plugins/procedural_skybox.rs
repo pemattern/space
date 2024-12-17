@@ -32,11 +32,8 @@ fn setup(
         ProceduralSkybox {
             material: material.clone(),
         },
-        MaterialMeshBundle {
-            mesh: meshes.add(Mesh::from(Sphere { radius: 500.0 })),
-            material,
-            ..default()
-        },
+        Mesh3d(meshes.add(Mesh::from(Sphere { radius: 500.0 }))),
+        MeshMaterial3d(material),
     ));
 }
 

@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.14.2", features = [
+bevy = { version = "0.15.0", features = [
   "bevy_dev_tools",
   "dynamic_linking",
   "file_watcher",
 ] }
-bevy_rapier3d = "0.27.0"
+bevy_rapier3d = "0.28.0"
 rand = "0.8.5"
 
 [profile.dev]

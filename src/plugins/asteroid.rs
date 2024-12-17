@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::{Collider, Damping, ExternalImpulse, RigidBody, Velocity};
+use bevy_rapier3d::prelude::{Collider, Damping, RigidBody, Velocity};
 use rand::Rng;
 
 pub struct AsteroidPlugin;
@@ -17,11 +17,11 @@ pub fn spawn_asteroids(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let mut asteroid_mesh_handles: Vec<Handle<Mesh>> = Vec::new();
+    let mut asteroid_meshes: Vec<Handle<Mesh>> = Vec::new();
     let mesh_variants = 3;
     let asteroid_count = 1000;
     for variant in 0..mesh_variants {
-        asteroid_mesh_handles.push(
+        asteroid_meshes.push(
             asset_server.load(
                 GltfAssetLabel::Primitive {
                     mesh: variant,
@@ -38,14 +38,11 @@ pub fn spawn_asteroids(
     for _ in 0..asteroid_count {
         commands.spawn((
             Asteroid,
-            PbrBundle {
-                mesh: asteroid_mesh_handles[rand::thread_rng().gen_range(0..mesh_variants)].clone(),
-                material: asteroid_material_handle.clone(),
-                transform: Transform {
-                    translation: random_vec3_in_sphere(),
-                    scale: random_vec3(0.75, 1.25),
-                    ..default()
-                },
+            Mesh3d(asteroid_meshes[rand::thread_rng().gen_range(0..mesh_variants)].clone()),
+            MeshMaterial3d(asteroid_material_handle.clone()),
+            Transform {
+                translation: random_vec3_in_sphere(),
+                scale: random_vec3(0.75, 1.25),
                 ..default()
             },
             RigidBody::Dynamic,
