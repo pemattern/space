@@ -25,7 +25,7 @@ fn add_components_main_camera(
     mut commands: Commands,
     main_camera_query: Query<Entity, With<MainCamera>>,
 ) {
-    if let Ok(main_camera_entity) = main_camera_query.get_single() {
+    if let Ok(main_camera_entity) = main_camera_query.single() {
         commands.entity(main_camera_entity).insert((
             Camera3d::default(),
             Transform::from_translation(TARGET_OFFSET),
@@ -40,7 +40,7 @@ fn camera_follow(
     mut camera_query: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
     time: Res<Time>,
 ) {
-    if let Ok(player_transform) = player_query.get_single() {
+    if let Ok(player_transform) = player_query.single() {
         for mut camera_transform in &mut camera_query {
             let target_offset_relative_to_player =
                 player_transform.rotation.mul_vec3(TARGET_OFFSET);

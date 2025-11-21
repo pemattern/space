@@ -1,7 +1,7 @@
 use bevy::{
     core_pipeline::{
         core_3d::graph::{Core3d, Node3d},
-        fullscreen_vertex_shader::fullscreen_shader_vertex_state,
+        FullscreenShader,
     },
     ecs::query::QueryItem,
     prelude::*,
@@ -11,7 +11,7 @@ use bevy::{
             UniformComponentPlugin,
         },
         render_graph::{
-            NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
+            NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
             binding_types::{sampler, texture_2d, uniform_buffer},
@@ -23,7 +23,7 @@ use bevy::{
         },
         renderer::{RenderContext, RenderDevice},
         view::ViewTarget,
-        RenderApp,
+        RenderApp, RenderStartup,
     },
 };
 
@@ -35,7 +35,7 @@ fn add_components_main_camera(
     mut commands: Commands,
     main_camera_query: Query<Entity, With<MainCamera>>,
 ) {
-    if let Ok(main_camera_entity) = main_camera_query.get_single() {
+    if let Ok(main_camera_entity) = main_camera_query.single() {
         commands
             .entity(main_camera_entity)
             .insert(ChromaticAbberationSettings {
@@ -56,6 +56,7 @@ impl Plugin for ChromaticAbberationPlugin {
             return;
         };
         render_app
+            .add_systems(RenderStartup, init_pipeline)
             .add_render_graph_node::<ViewNodeRunner<ChromaticAbberationNode>>(
                 Core3d,
                 ChromaticAbberationLabel,
@@ -68,14 +69,6 @@ impl Plugin for ChromaticAbberationPlugin {
                     Node3d::EndMainPassPostProcessing,
                 ),
             );
-    }
-
-    fn finish(&self, app: &mut App) {
-        let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
-            return;
-        };
-
-        render_app.init_resource::<ChromaticAbberationPipeline>();
     }
 }
 
@@ -135,6 +128,7 @@ impl ViewNode for ChromaticAbberationNode {
                 view: post_process.destination,
                 resolve_target: None,
                 ops: Operations::default(),
+                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -149,53 +143,54 @@ impl ViewNode for ChromaticAbberationNode {
     }
 }
 
-impl FromWorld for ChromaticAbberationPipeline {
-    fn from_world(world: &mut World) -> Self {
-        let render_device = world.resource::<RenderDevice>();
-        let layout = render_device.create_bind_group_layout(
-            "post_process_bind_group_layout",
-            &BindGroupLayoutEntries::sequential(
-                ShaderStages::FRAGMENT,
-                (
-                    texture_2d(TextureSampleType::Float { filterable: true }),
-                    sampler(SamplerBindingType::Filtering),
-                    uniform_buffer::<ChromaticAbberationSettings>(true),
-                ),
+fn init_pipeline(
+    mut commands: Commands,
+    render_device: Res<RenderDevice>,
+    asset_server: Res<AssetServer>,
+    fullscreen_shader: Res<FullscreenShader>,
+    pipeline_cache: Res<PipelineCache>,
+) {
+    let layout = render_device.create_bind_group_layout(
+        "post_process_bind_group_layout",
+        &BindGroupLayoutEntries::sequential(
+            ShaderStages::FRAGMENT,
+            (
+                texture_2d(TextureSampleType::Float { filterable: true }),
+                sampler(SamplerBindingType::Filtering),
+                uniform_buffer::<ChromaticAbberationSettings>(true),
             ),
-        );
+        ),
+    );
 
-        let sampler = render_device.create_sampler(&SamplerDescriptor::default());
-        let shader = world.load_asset("shaders/chromatic_abberation.wgsl");
-        let pipeline_id =
-            world
-                .resource_mut::<PipelineCache>()
-                .queue_render_pipeline(RenderPipelineDescriptor {
-                    label: Some("chromatic_abberation_pipeline".into()),
-                    layout: vec![layout.clone()],
-                    vertex: fullscreen_shader_vertex_state(),
-                    fragment: Some(FragmentState {
-                        shader,
-                        shader_defs: vec![],
-                        entry_point: "fragment".into(),
-                        targets: vec![Some(ColorTargetState {
-                            format: TextureFormat::bevy_default(),
-                            blend: None,
-                            write_mask: ColorWrites::ALL,
-                        })],
-                    }),
-                    primitive: PrimitiveState::default(),
-                    depth_stencil: None,
-                    multisample: MultisampleState::default(),
-                    push_constant_ranges: vec![],
-                    zero_initialize_workgroup_memory: true,
-                });
+    let sampler = render_device.create_sampler(&SamplerDescriptor::default());
+    let shader = asset_server.load("shaders/chromatic_abberation.wgsl");
+    let vertex_state = fullscreen_shader.to_vertex_state();
+    let pipeline_id = pipeline_cache.queue_render_pipeline(RenderPipelineDescriptor {
+        label: Some("chromatic_abberation_pipeline".into()),
+        layout: vec![layout.clone()],
+        vertex: vertex_state,
+        fragment: Some(FragmentState {
+            shader,
+            shader_defs: vec![],
+            entry_point: Some("fragment".into()),
+            targets: vec![Some(ColorTargetState {
+                format: TextureFormat::bevy_default(),
+                blend: None,
+                write_mask: ColorWrites::ALL,
+            })],
+        }),
+        primitive: PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: MultisampleState::default(),
+        push_constant_ranges: vec![],
+        zero_initialize_workgroup_memory: true,
+    });
 
-        Self {
-            layout,
-            sampler,
-            pipeline_id,
-        }
-    }
+    commands.insert_resource(ChromaticAbberationPipeline {
+        layout,
+        sampler,
+        pipeline_id,
+    });
 }
 
 #[derive(Resource)]

@@ -1,6 +1,7 @@
 use bevy::{
     prelude::*,
-    render::render_resource::{AsBindGroup, FrontFace, ShaderRef},
+    render::render_resource::{AsBindGroup, FrontFace},
+    shader::ShaderRef,
 };
 
 pub struct ProceduralSkyboxPlugin;
@@ -41,8 +42,8 @@ fn move_with_camera(
     mut skybox_query: Query<&mut Transform, (With<ProceduralSkybox>, Without<Camera>)>,
     camera_query: Query<&Transform, (With<Camera>, Without<ProceduralSkybox>)>,
 ) {
-    if let Ok(mut skybox_transform) = skybox_query.get_single_mut() {
-        if let Ok(camera_transform) = camera_query.get_single() {
+    if let Ok(mut skybox_transform) = skybox_query.single_mut() {
+        if let Ok(camera_transform) = camera_query.single() {
             skybox_transform.translation = camera_transform.translation;
         }
     }
@@ -53,9 +54,9 @@ fn update_material(
     skybox_query: Query<&ProceduralSkybox>,
     camera_query: Query<&Transform, With<Camera>>,
 ) {
-    if let Ok(skybox) = skybox_query.get_single() {
+    if let Ok(skybox) = skybox_query.single() {
         if let Some(material) = materials.get_mut(&skybox.material) {
-            if let Ok(camera_transform) = camera_query.get_single() {
+            if let Ok(camera_transform) = camera_query.single() {
                 material.camera_position = camera_transform.translation;
             }
         }
@@ -74,9 +75,9 @@ impl Material for ProceduralSkyboxMaterial {
     }
 
     fn specialize(
-        _pipeline: &bevy::pbr::MaterialPipeline<Self>,
+        _pipeline: &bevy::pbr::MaterialPipeline,
         descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
-        _layout: &bevy::render::mesh::MeshVertexBufferLayoutRef,
+        _layout: &bevy::mesh::MeshVertexBufferLayoutRef,
         _key: bevy::pbr::MaterialPipelineKey<Self>,
     ) -> Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
         descriptor.primitive.front_face = FrontFace::Cw;

@@ -1,8 +1,8 @@
 use bevy::{
     core_pipeline::{
         core_3d::graph::{Core3d, Node3d},
-        fullscreen_vertex_shader::fullscreen_shader_vertex_state,
         prepass::ViewPrepassTextures,
+        FullscreenShader,
     },
     ecs::query::QueryItem,
     prelude::*,
@@ -12,7 +12,7 @@ use bevy::{
             UniformComponentPlugin,
         },
         render_graph::{
-            NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
+            NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
             binding_types::{
@@ -39,7 +39,7 @@ fn add_components_main_camera(
     mut commands: Commands,
     main_camera_query: Query<Entity, With<MainCamera>>,
 ) {
-    if let Ok(main_camera_entity) = main_camera_query.get_single() {
+    if let Ok(main_camera_entity) = main_camera_query.single() {
         commands
             .entity(main_camera_entity)
             .insert(OutlineSettings { cutoff: 0.5 });
@@ -141,6 +141,7 @@ impl ViewNode for OutlineNode {
                 view: post_process.destination,
                 resolve_target: None,
                 ops: Operations::default(),
+                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -174,17 +175,18 @@ impl FromWorld for OutlinePipeline {
 
         let color_sampler = render_device.create_sampler(&SamplerDescriptor::default());
         let shader = world.load_asset("shaders/outline.wgsl");
+        let vertex_state = world.resource::<FullscreenShader>().to_vertex_state();
         let pipeline_id =
             world
                 .resource_mut::<PipelineCache>()
                 .queue_render_pipeline(RenderPipelineDescriptor {
                     label: Some("outline_pipline".into()),
                     layout: vec![layout.clone()],
-                    vertex: fullscreen_shader_vertex_state(),
+                    vertex: vertex_state,
                     fragment: Some(FragmentState {
                         shader,
                         shader_defs: vec![],
-                        entry_point: "fragment".into(),
+                        entry_point: Some("fragment".into()),
                         targets: vec![Some(ColorTargetState {
                             format: TextureFormat::bevy_default(),
                             blend: None,

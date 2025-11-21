@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
 
 use crate::core::player::Player;
 
@@ -15,7 +14,7 @@ fn add_components_player(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if let Ok(player_entity) = player_query.get_single() {
+    if let Ok(player_entity) = player_query.single() {
         commands.entity(player_entity).insert((
             Mesh3d(
                 asset_server.load(
@@ -30,15 +29,6 @@ fn add_components_player(
                 base_color: Color::srgb(0.7, 0.15, 0.15),
                 ..default()
             })),
-            RigidBody::Dynamic,
-            Damping {
-                linear_damping: 0.9,
-                angular_damping: 0.9,
-            },
-            Collider::capsule_y(1.0, 1.0),
-            Velocity::default(),
-            ExternalForce::default(),
-            TransformInterpolation::default(),
         ));
     }
 }

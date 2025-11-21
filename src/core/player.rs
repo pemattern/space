@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::ecs::component::Component;
 
 #[derive(Component)]
 pub struct Player;

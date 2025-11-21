@@ -2,7 +2,7 @@
 #import "shaders/noise/value.wgsl"::value_3d;
 #import "shaders/noise/voronoi.wgsl"::voronoi_3d;
 
-@group(2) @binding(0) var<uniform> camera_position: vec3<f32>;
+@group(0) @binding(0) var<uniform> camera_position: vec3<f32>;
 
 @fragment
 fn fragment(@location(0) world_position: vec3<f32>) -> @location(0) vec4<f32> {

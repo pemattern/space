@@ -1,8 +1,8 @@
 use crate::core::projectile::Projectile;
 use std::sync::Arc;
 
+use avian3d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
 
 use crate::{
     core::player::Player,
@@ -14,7 +14,7 @@ fn add_components_player(
     weapons: Res<Weapons>,
     player_query: Query<Entity, With<Player>>,
 ) {
-    if let Ok(player_entity) = player_query.get_single() {
+    if let Ok(player_entity) = player_query.single() {
         commands.entity(player_entity).insert(WeaponSlots::new(
             Some(weapons.test.clone()),
             Some(weapons.test2.clone()),
@@ -45,11 +45,8 @@ fn update_weapon_slots(
                         commands.spawn((
                             Projectile { lifetime: 1.0 },
                             RigidBody::Dynamic,
-                            Collider::ball(0.1),
-                            Velocity {
-                                linvel: transform.forward() * 200.0,
-                                angvel: Vec3::ZERO,
-                            },
+                            Collider::sphere(0.1),
+                            LinearVelocity(transform.forward() * 200.0),
                             Mesh3d(meshes.add(Capsule3d {
                                 radius: 0.1,
                                 half_length: 3.0,

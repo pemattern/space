@@ -1,5 +1,8 @@
+use avian3d::{
+    math::{Vector, Vector3},
+    prelude::LinearVelocity,
+};
 use bevy::{input::mouse::MouseMotion, prelude::*};
-use bevy_rapier3d::prelude::*;
 
 use crate::core::player::Player;
 
@@ -37,7 +40,7 @@ impl PlayerController {
 }
 
 fn add_player_controller(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
-    if let Ok(player_entity) = player_query.get_single() {
+    if let Ok(player_entity) = player_query.single() {
         commands
             .entity(player_entity)
             .insert(PlayerController::new());
@@ -46,10 +49,10 @@ fn add_player_controller(mut commands: Commands, player_query: Query<Entity, Wit
 
 fn handle_player_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut mouse_movement: EventReader<MouseMotion>,
+    mut mouse_movement: MessageReader<MouseMotion>,
     mut player_query: Query<&mut PlayerController, With<Player>>,
 ) {
-    if let Ok(mut player_controller) = player_query.get_single_mut() {
+    if let Ok(mut player_controller) = player_query.single_mut() {
         let mut movement_input = Vec3::ZERO;
         let mut rotation_input = Vec3::ZERO;
         if keyboard_input.any_pressed([KeyCode::KeyW]) {
@@ -71,19 +74,9 @@ fn handle_player_input(
 }
 
 fn player_movement(
-    mut player_query: Query<
-        (
-            &Transform,
-            &PlayerController,
-            &mut ExternalForce,
-            &mut Velocity,
-        ),
-        With<Player>,
-    >,
+    mut player_query: Query<(&Transform, &PlayerController, &mut LinearVelocity), With<Player>>,
 ) {
-    if let Ok((transform, player_controller, mut external_force, mut velocity)) =
-        player_query.get_single_mut()
-    {
+    if let Ok((transform, player_controller, mut velocity)) = player_query.single_mut() {
         let movement_direction = transform.forward() * player_controller.movement_input.z;
         let mut rotation_direction = Vec3::ZERO;
 
@@ -95,15 +88,11 @@ fn player_movement(
         let movement_force = movement_direction * player_controller.movement_force_strength;
         let rotation_force = rotation_direction * movement_direction.length();
 
-        external_force.force = movement_force;
-        external_force.torque = rotation_force * 10.0;
+        velocity.x += movement_force.x;
+        velocity.y += movement_force.y;
+        velocity.z += movement_force.z;
 
-        velocity.linvel = velocity
-            .linvel
-            .clamp_length_max(player_controller.max_movement_speed);
-        velocity.angvel = velocity
-            .angvel
-            .clamp_length_max(player_controller.max_rotation_speed);
+        // velocity = velocity.clamp_length_max(player_controller.max_movement_speed);
     }
 }
 
@@ -111,7 +100,7 @@ fn player_weapon_fire(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut weapon_slots_query: Query<&mut WeaponSlots, With<Player>>,
 ) {
-    if let Ok(mut weapon_slots) = weapon_slots_query.get_single_mut() {
+    if let Ok(mut weapon_slots) = weapon_slots_query.single_mut() {
         if mouse_button_input.pressed(MouseButton::Left) {
             weapon_slots.fire(&WeaponSlotType::Primary);
         }

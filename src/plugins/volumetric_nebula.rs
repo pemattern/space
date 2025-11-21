@@ -1,9 +1,8 @@
-use bevy::render::render_resource::binding_types::texture_depth_2d_multisampled;
 use bevy::{
     core_pipeline::{
         core_3d::graph::{Core3d, Node3d},
-        fullscreen_vertex_shader::fullscreen_shader_vertex_state,
         prepass::ViewPrepassTextures,
+        FullscreenShader,
     },
     ecs::query::QueryItem,
     prelude::*,
@@ -13,7 +12,7 @@ use bevy::{
             UniformComponentPlugin,
         },
         render_graph::{
-            NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
+            NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
             binding_types::{sampler, texture_2d, uniform_buffer},
@@ -37,7 +36,7 @@ fn add_components_main_camera(
     mut commands: Commands,
     main_camera_query: Query<Entity, With<MainCamera>>,
 ) {
-    if let Ok(main_camera_entity) = main_camera_query.get_single() {
+    if let Ok(main_camera_entity) = main_camera_query.single() {
         commands
             .entity(main_camera_entity)
             .insert(VolumetricNebulaSettings {
@@ -60,8 +59,8 @@ fn startup_settings(
     light_query: Query<&Transform, With<DirectionalLight>>,
     mut nebula_query: Query<&mut VolumetricNebulaSettings, With<Camera>>,
 ) {
-    if let Ok(light) = light_query.get_single() {
-        if let Ok(mut nebula) = nebula_query.get_single_mut() {
+    if let Ok(light) = light_query.single() {
+        if let Ok(mut nebula) = nebula_query.single_mut() {
             nebula.light_direction = light.forward().as_vec3();
         }
     }
@@ -71,7 +70,7 @@ fn update_settings(
     mut camera_query: Query<(&Transform, &mut VolumetricNebulaSettings), With<MainCamera>>,
     time: Res<Time>,
 ) {
-    if let Ok(camera) = camera_query.get_single_mut() {
+    if let Ok(camera) = camera_query.single_mut() {
         let mut settings = camera.1;
         settings.camera_position = camera.0.translation;
         settings.camera_right = camera.0.right().as_vec3();
@@ -150,7 +149,7 @@ impl ViewNode for VolumetricNebulaNode {
         &self,
         _graph: &mut RenderGraphContext,
         render_context: &mut RenderContext,
-        (view_target, _post_process_settings, settings_index, view_prepass_textures): QueryItem<
+        (view_target, _post_process_settings, settings_index, _view_prepass_textures): QueryItem<
             Self::ViewQuery,
         >,
         world: &World,
@@ -185,6 +184,7 @@ impl ViewNode for VolumetricNebulaNode {
                 view: post_process.destination,
                 resolve_target: None,
                 ops: Operations::default(),
+                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -216,17 +216,18 @@ impl FromWorld for VolumetricNebulaPipeline {
 
         let color_sampler = render_device.create_sampler(&SamplerDescriptor::default());
         let shader = world.load_asset("shaders/volumetric_nebula.wgsl");
+        let vertex_state = world.resource::<FullscreenShader>().to_vertex_state();
         let pipeline_id =
             world
                 .resource_mut::<PipelineCache>()
                 .queue_render_pipeline(RenderPipelineDescriptor {
                     label: Some("volumetric_nebula_pipeline".into()),
                     layout: vec![layout.clone()],
-                    vertex: fullscreen_shader_vertex_state(),
+                    vertex: vertex_state,
                     fragment: Some(FragmentState {
                         shader,
                         shader_defs: vec![],
-                        entry_point: "fragment".into(),
+                        entry_point: Some("fragment".into()),
                         targets: vec![Some(ColorTargetState {
                             format: TextureFormat::bevy_default(),
                             blend: None,

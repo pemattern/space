@@ -19,7 +19,7 @@ impl Plugin for UpgradePlugin {
 }
 
 fn update_upgrades(container_query: Query<&UpgradeContainer, With<Player>>) {
-    if let Ok(container) = container_query.get_single() {
+    if let Ok(container) = container_query.single() {
         for upgrade in container.get_all() {
             upgrade.on_update();
         }
@@ -27,7 +27,7 @@ fn update_upgrades(container_query: Query<&UpgradeContainer, With<Player>>) {
 }
 
 fn add_components_player(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
-    if let Ok(player_entity) = player_query.get_single() {
+    if let Ok(player_entity) = player_query.single() {
         commands
             .entity(player_entity)
             .insert(UpgradeContainer::default());
@@ -38,7 +38,7 @@ fn add_upgrade(
     upgrades: Res<Upgrades>,
     mut container_query: Query<&mut UpgradeContainer, With<Player>>,
 ) {
-    if let Ok(mut container) = container_query.get_single_mut() {
+    if let Ok(mut container) = container_query.single_mut() {
         container.attach(upgrades.test.clone());
     }
 }

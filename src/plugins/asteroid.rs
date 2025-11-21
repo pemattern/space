@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::{Collider, Damping, RigidBody, Velocity};
 use rand::Rng;
 
 pub struct AsteroidPlugin;
@@ -44,16 +43,6 @@ pub fn spawn_asteroids(
                 translation: random_vec3_in_sphere(),
                 scale: random_vec3(0.75, 1.25),
                 ..default()
-            },
-            RigidBody::Dynamic,
-            Damping {
-                linear_damping: 0.0,
-                angular_damping: 0.0,
-            },
-            Collider::capsule_y(1.0, 1.0),
-            Velocity {
-                linvel: random_vec3(-0.1, 0.1),
-                angvel: random_vec3(-0.1, 0.1),
             },
         ));
     }
