@@ -60,7 +60,7 @@ fn random_vec3(min: f32, max: f32) -> Vec3 {
 fn random_vec3_in_sphere() -> Vec3 {
     let radius = 300.0;
     let mut rng = rand::thread_rng();
-    let r = radius * rng.gen::<f32>().cbrt();
+    let r = radius * rng.r#gen::<f32>().cbrt();
 
     let theta = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
     let phi = rng.gen_range(0.0..std::f32::consts::PI);

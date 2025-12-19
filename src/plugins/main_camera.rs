@@ -7,7 +7,7 @@ use crate::core::{main_camera::MainCamera, player::Player};
 
 pub struct MainCameraPlugin;
 
-const TARGET_OFFSET: Vec3 = Vec3::new(0.0, 4.2, 14.0);
+const TARGET_OFFSET: Vec3 = Vec3::new(0.0, 2.0, 18.0);
 
 impl Plugin for MainCameraPlugin {
     fn build(&self, app: &mut App) {

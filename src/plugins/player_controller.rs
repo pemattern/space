@@ -19,7 +19,7 @@ impl Plugin for PlayerControllerPlugin {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug)]
 struct PlayerController {
     pub movement_input: Vec3,
     pub rotation_input: Vec3,
@@ -33,7 +33,7 @@ impl PlayerController {
         Self {
             max_movement_speed: 20.0,
             max_rotation_speed: 5.0,
-            movement_force_strength: 500.0,
+            movement_force_strength: 1.0,
             ..default()
         }
     }
@@ -78,15 +78,15 @@ fn player_movement(
 ) {
     if let Ok((transform, player_controller, mut velocity)) = player_query.single_mut() {
         let movement_direction = transform.forward() * player_controller.movement_input.z;
-        let mut rotation_direction = Vec3::ZERO;
+        // let mut rotation_direction = Vec3::ZERO;
 
-        rotation_direction += transform.forward() * player_controller.rotation_input.z;
-        rotation_direction += transform.right() * player_controller.rotation_input.y;
-        rotation_direction += transform.up() * player_controller.rotation_input.x;
-        rotation_direction = rotation_direction.normalize_or_zero();
+        // rotation_direction += transform.forward() * player_controller.rotation_input.z;
+        // rotation_direction += transform.right() * player_controller.rotation_input.y;
+        // rotation_direction += transform.up() * player_controller.rotation_input.x;
+        // rotation_direction = rotation_direction.normalize_or_zero();
 
         let movement_force = movement_direction * player_controller.movement_force_strength;
-        let rotation_force = rotation_direction * movement_direction.length();
+        // let rotation_force = rotation_direction * movement_direction.length();
 
         velocity.x += movement_force.x;
         velocity.y += movement_force.y;

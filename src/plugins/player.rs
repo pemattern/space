@@ -1,3 +1,7 @@
+use avian3d::prelude::{
+    AngularDamping, AngularVelocity, Collider, LinearDamping, LinearVelocity, RigidBody,
+    TransformInterpolation,
+};
 use bevy::prelude::*;
 
 use crate::core::player::Player;
@@ -29,6 +33,13 @@ fn add_components_player(
                 base_color: Color::srgb(0.7, 0.15, 0.15),
                 ..default()
             })),
+            TransformInterpolation,
+            LinearVelocity::ZERO,
+            LinearDamping(0.9),
+            AngularVelocity::ZERO,
+            AngularDamping(0.9),
+            RigidBody::Dynamic,
+            Collider::sphere(0.5),
         ));
     }
 }
